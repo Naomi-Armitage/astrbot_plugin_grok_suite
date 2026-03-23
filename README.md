@@ -1,15 +1,14 @@
 # Grok AI 助手
 
-Grok 全能插件：文生图、图生图、图生视频、智能对话（自动联网）、LLM Tool 调用，一站式 AI 多媒体体验。
 
 ## 功能
 
 | 功能 | 命令 | 说明 |
 |------|------|------|
-| 文生图 | `/grok生图 [数量] [尺寸] 提示词` | 根据文字描述生成图片 |
-| 图生图 | `/grok生图 提示词 + 图片` | 基于参考图片进行编辑/重绘 |
-| 生视频 | `/grok视频 [尺寸] [时长] 提示词 [+图片可选]` | 支持文生视频与图生视频 |
-| 智能对话 | `/grok 内容 [+图片/语音/文件可选]` | 与 Grok 对话，自动判断是否需要联网 |
+| 文生图 | `#生图 [数量] [尺寸] 提示词` | 根据文字描述生成图片 |
+| 图生图 | `#生图 提示词 + 图片` | 基于参考图片进行编辑/重绘 |
+| 生视频 | `#生视频 [尺寸] [时长] 提示词 [+图片可选]` | 支持文生视频与图生视频 |
+| 对话/联网搜索 | `/grok 问题内容 [+图片/语音/文件可选]` | 支持普通对话、实时联网搜索和多模态理解 |
 | 帮助 | `/grok帮助` | 查看使用说明 |
 
 ## 配置说明
@@ -35,7 +34,7 @@ Grok 全能插件：文生图、图生图、图生视频、智能对话（自动
 | `grok_image_model` | 文生图 | `grok-imagine-1.0` | `/v1/images/generations` |
 | `grok_edit_model` | 图生图 | `grok-imagine-1.0-edit` | `/v1/images/edits` |
 | `grok_video_model` | 生视频 | `grok-imagine-1.0-video` | `/v1/chat/completions` |
-| `grok_search_model` | 对话/搜索 | `grok-4-fast` | `/v1/chat/completions` |
+| `grok_search_model` | 对话/联网搜索 | `grok-4-fast` | `/v1/chat/completions` |
 
 **模型说明**：所有模型均通过配置项读取，代码中的默认值仅作为备用。你可以根据 API 提供商支持的模型自行修改。
 
@@ -46,33 +45,21 @@ Grok 全能插件：文生图、图生图、图生视频、智能对话（自动
 | `grok-imagine-1.0` | 图像生成 | 标准图像生成 |
 | `grok-imagine-1.0-edit` | 图像编辑 | 基于参考图编辑 |
 | `grok-imagine-1.0-video` | 视频生成 | 图片转视频 |
-| `grok-3` / `grok-4` / `grok-4-fast` | 对话+搜索 | 支持对话和联网搜索 |
-
-### 对话/搜索配置
-
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `grok_search_model` | 对话/搜索模型 | `grok-4-fast` |
-| `grok_search_mode` | 搜索模式 | `auto` |
-| `grok_search_enable_thinking` | 开启思考模式 | `true` |
-| `grok_search_thinking_budget` | 思考 token 预算 | `32000` |
-| `grok_search_timeout_seconds` | 请求超时时间 | `60` |
-| `grok_search_show_sources` | 显示来源链接 | `false` |
-| `grok_search_max_sources` | 最多显示来源数 | `5` |
-| `grok_search_extra_body` | 额外请求体 (JSON) | `{}` |
-| `grok_search_extra_headers` | 额外请求头 (JSON) | `{}` |
-| `grok_search_enable_skill` | 启用 Skill 模式 | `false` |
-
-**搜索模式说明**：
-- `auto`（默认）：模型自动判断是否需要联网搜索
-- `on`：始终使用联网搜索
-- `off`：纯对话模式，不联网
 
 ### 其他配置
 
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
 | `save_media` | 是否保存生成的媒体文件 | `false` |
+| `grok_search_mode` | 联网策略：`auto` / `on` / `off` | `auto` |
+| `grok_search_enable_thinking` | 是否启用 reasoning 参数 | `true` |
+| `grok_search_thinking_budget` | reasoning budget tokens | `32000` |
+| `grok_search_timeout_seconds` | 对话/搜索超时时间（秒） | `60` |
+| `grok_search_show_sources` | 是否在结果中显示来源链接 | `false` |
+| `grok_search_max_sources` | 最多显示来源数量，`0` 表示不限制 | `5` |
+| `grok_search_extra_body` | 对话请求额外 JSON body | `{}` |
+| `grok_search_extra_headers` | 对话请求额外 JSON headers | `{}` |
+| `grok_search_enable_skill` | 启用后移除内置 `grok_web_search` 工具 | `false` |
 | `user_whitelist` | 用户白名单（空=不限制） | `[]` |
 | `user_blacklist` | 用户黑名单 | `[]` |
 | `group_whitelist` | 群聊白名单（空=不限制） | `[]` |
@@ -83,11 +70,11 @@ Grok 全能插件：文生图、图生图、图生视频、智能对话（自动
 ### 文生图
 
 ```
-/grok生图 一只可爱的猫咪
-/grok生图 4 3:2 日落海滩风景
-/grok生图 1:1 赛博朋克城市夜景
-/grok生图 9:16 一只猫
-/grok生图 4 1792x1024 日落海滩风景
+#生图 一只可爱的猫咪
+#生图 4 3:2 日落海滩风景
+#生图 1:1 赛博朋克城市夜景
+#生图 9:16 一只猫
+#生图 4 1792x1024 日落海滩风景
 ```
 
 参数说明：
@@ -102,9 +89,9 @@ Grok 全能插件：文生图、图生图、图生视频、智能对话（自动
 
 发送图片或引用图片，附带命令：
 ```
-/grok生图 把背景换成森林
-/grok生图 转换为油画风格
-/grok生图 4 添加下雪效果
+#生图 把背景换成森林
+#生图 转换为油画风格
+#生图 4 添加下雪效果
 ```
 
 说明：
@@ -117,11 +104,11 @@ Grok 全能插件：文生图、图生图、图生视频、智能对话（自动
 
 可直接发文字，或发送图片/引用图片后附带命令：
 ```
-/grok视频 让画面动起来
-/grok视频 10 夜晚海边的慢镜头
-/grok视频 3:2 夜晚海边的慢镜头
-/grok视频 16:9 6 让人物眨眼微笑
-/grok视频 1792x1024 添加飘落的樱花
+#生视频 让画面动起来
+#生视频 10 夜晚海边的慢镜头
+#生视频 3:2 夜晚海边的慢镜头
+#生视频 16:9 6 让人物眨眼微笑
+#生视频 1792x1024 添加飘落的樱花
 ```
 
 说明：
@@ -132,44 +119,18 @@ Grok 全能插件：文生图、图生图、图生视频、智能对话（自动
 - 固定 `720p` 输出（脚本内固定）
 - 自动启用增强策略（高细节、低噪点、时序稳定）
 
-### 智能对话
+### 对话/联网搜索
 
-```
-/grok 你好，介绍一下你自己
-/grok 帮我写一首关于春天的诗
-/grok 今天的新闻有哪些（自动联网）
-/grok 最新的 AI 技术进展（自动联网）
-/grok 帮我总结这段语音内容（附语音）
-/grok 请提炼这个文件的重点（附文件）
+支持通过 `/grok` 发起普通对话、联网搜索，以及图片/语音/文件理解。
+
+```text
+/grok 今天有什么新闻
+/grok 这张图片里有什么 +图片
+/grok 帮我总结这个语音和文件 +语音/+文件
 ```
 
 说明：
-- 默认 `auto` 模式：模型自动判断是否需要联网
-- 普通问题直接回答，时效性问题自动联网搜索
-- 支持图片、语音、文件的多模态理解
-- 可通过配置切换为始终联网或纯对话模式
-- 支持作为 LLM Tool 被其他插件调用
-
-## API 接口对照
-
-本插件参考 [grok2api](https://github.com/chenyme/grok2api) 项目的接口规范：
-
-| 功能 | 接口路径 | 请求格式 |
-|------|----------|----------|
-| 文生图 | `POST /v1/images/generations` | JSON |
-| 图生图 | `POST /v1/images/edits` | multipart/form-data |
-| 图生视频 | `POST /v1/chat/completions` | JSON (stream) |
-| 对话/搜索 | `POST /v1/chat/completions` | JSON |
-
-## 注意事项
-
-1. **API 兼容性**：本插件兼容 xAI 官方 API 及 grok2api 等第三方代理服务
-2. **模型名称**：不同 API 提供商支持的模型可能不同，请根据实际情况配置
-3. **图片格式**：支持 PNG、JPG、WEBP、GIF、BMP 格式
-4. **合法尺寸**：像素格式 `1024x1024`、`1024x1792`、`1280x720`、`1792x1024`、`720x1280`；比例格式 `1:1`、`2:3`、`3:2`、`9:16`、`16:9`
-5. **超时设置**：图片生成 120 秒，视频生成 300 秒，对话/搜索默认 60 秒
-6. **文件保存**：开启 `save_media` 后，文件保存在插件数据目录的 `images/` 和 `videos/` 子目录
-7. **LLM Tool**：对话/搜索功能可作为 LLM Tool 被其他插件或 Agent 调用
-8. **Skill 模式**：开启后禁用 LLM Tool，改为通过 Skill 钩子响应
-9. **搜索模式**：`auto` 模式下模型会自动判断是否需要联网，无需手动切换
-10. **模型容错**：插件会自动探测可用模型，当前配置模型不可用时自动回退
+- `grok_search_mode=auto` 时，由模型判断是否需要联网
+- `grok_search_mode=on` 时，始终联网搜索
+- `grok_search_mode=off` 时，仅执行普通对话
+- 开启 `grok_search_show_sources` 后，会在回复中附带来源链接

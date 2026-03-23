@@ -11,6 +11,12 @@
         "type": "string",
         "default": ""
     },
+    "grok_public_key": {
+        "description": "Grok Public 密钥",
+        "hint": "用于新 grok2api 分支的 public video 回退接口；对应后端 PUBLIC_KEY。留空时会按匿名 public 接口尝试",
+        "type": "string",
+        "default": ""
+    },
     "grok_image_model": {
         "description": "文生图模型",
         "hint": "图像生成模型，默认 grok-imagine-1.0",
@@ -36,32 +42,32 @@
         "default": "grok-4-fast"
     },
     "grok_search_mode": {
-        "description": "搜索模式",
-        "hint": "auto=模型自动判断是否联网, on=始终联网, off=纯对话不联网",
+        "description": "联网策略",
+        "hint": "auto=自动判断是否联网，on=始终联网，off=仅对话不联网",
         "type": "string",
         "default": "auto"
     },
     "grok_search_enable_thinking": {
-        "description": "对话思考模式",
-        "hint": "开启后会附带 reasoning 参数",
+        "description": "启用推理模式",
+        "hint": "开启后会附带 reasoning 参数以提升复杂问题表现",
         "type": "bool",
         "default": true
     },
     "grok_search_thinking_budget": {
-        "description": "对话思考预算",
-        "hint": "仅在开启思考模式时生效",
+        "description": "推理预算 tokens",
+        "hint": "仅在启用推理模式时生效，默认 32000",
         "type": "int",
         "default": 32000
     },
     "grok_search_timeout_seconds": {
-        "description": "对话超时时间（秒）",
-        "hint": "默认 60 秒",
+        "description": "对话/搜索超时时间",
+        "hint": "单位秒，默认 60",
         "type": "int",
         "default": 60
     },
     "grok_search_show_sources": {
-        "description": "显示来源链接",
-        "hint": "开启后在结果中附加来源链接",
+        "description": "显示搜索来源",
+        "hint": "开启后在返回结果中附加来源链接",
         "type": "bool",
         "default": false
     },
@@ -72,20 +78,26 @@
         "default": 5
     },
     "grok_search_extra_body": {
-        "description": "对话额外请求体（JSON）",
+        "description": "对话额外请求体(JSON)",
         "hint": "例如: {\"max_tokens\":4096}",
         "type": "text",
         "default": "{}"
     },
     "grok_search_extra_headers": {
-        "description": "对话额外请求头（JSON）",
+        "description": "对话额外请求头(JSON)",
         "hint": "例如: {\"X-Trace-Id\":\"your-id\"}",
         "type": "text",
         "default": "{}"
     },
     "grok_search_enable_skill": {
-        "description": "启用 Skill 模式（禁用 LLM Tool）",
-        "hint": "当你已安装 grok-search skill 脚本时开启",
+        "description": "启用 Skill 模式",
+        "hint": "启用后会在 LLM 请求阶段移除内置 grok_web_search 工具，避免与外部 skill 重复",
+        "type": "bool",
+        "default": false
+    },
+    "nsfw_enabled": {
+        "description": "NSFW mode",
+        "hint": "Grok2API only. Adds nsfw=true to image generation/edit requests.",
         "type": "bool",
         "default": false
     },
@@ -95,32 +107,142 @@
         "type": "bool",
         "default": false
     },
+    "default_image_ratio": {
+        "description": "默认图片比例",
+        "hint": "未显式指定比例时使用，支持 1:1 / 3:2 / 2:3 / 16:9 / 9:16",
+        "type": "string",
+        "default": "9:16"
+    },
+    "default_video_ratio": {
+        "description": "默认视频比例",
+        "hint": "未显式指定比例时使用，支持 1:1 / 3:2 / 2:3 / 16:9 / 9:16",
+        "type": "string",
+        "default": "3:2"
+    },
+    "default_video_length_seconds": {
+        "description": "默认视频秒数",
+        "hint": "未显式指定秒数时使用，支持 6-30 秒",
+        "type": "int",
+        "default": 6
+    },
+    "default_video_resolution": {
+        "description": "默认视频分辨率",
+        "hint": "支持 480p / 720p；720p 会触发超分，耗时更久",
+        "type": "string",
+        "default": "720p"
+    },
+    "max_cached_images": {
+        "description": "图片缓存数量上限",
+        "hint": "本地图片缓存/保存文件的最大保留数量，超过会自动清理旧文件",
+        "type": "int",
+        "default": 30
+    },
+    "max_cached_videos": {
+        "description": "视频缓存数量上限",
+        "hint": "本地视频缓存/保存文件的最大保留数量，超过会自动清理旧文件",
+        "type": "int",
+        "default": 10
+    },
+    "max_temp_media_files": {
+        "description": "临时媒体文件上限",
+        "hint": "save_media 关闭时，临时发送目录最多保留的文件数量",
+        "type": "int",
+        "default": 20
+    },
+    "stream_enabled": {
+        "description": "全局流式优先",
+        "hint": "开启后，插件会在支持的多媒体请求上优先尝试流式，失败再自动回退非流式",
+        "type": "bool",
+        "default": true
+    },
+    "enable_natural_language_image": {
+        "description": "启用自然语言生图触发",
+        "hint": "开启后，在被唤醒场景（@机器人/唤醒词）下，可直接用自然语言触发生图，例如：帮我生成两张16:9的日落沙滩图片",
+        "type": "bool",
+        "default": true
+    },
+    "enable_natural_language_video": {
+        "description": "启用自然语言生视频触发",
+        "hint": "开启后，在被唤醒场景（@机器人/唤醒词）下，可直接用自然语言触发生视频，例如：帮我生成一个16:9的10秒日落海边视频",
+        "type": "bool",
+        "default": true
+    },
     "user_whitelist": {
         "description": "用户白名单",
         "hint": "允许使用此插件的用户ID列表，为空则不限制",
         "type": "list",
-        "items": {"type": "string"},
+        "items": {
+            "type": "string"
+        },
         "default": []
     },
     "user_blacklist": {
         "description": "用户黑名单",
         "hint": "禁止使用此插件的用户ID列表",
         "type": "list",
-        "items": {"type": "string"},
+        "items": {
+            "type": "string"
+        },
         "default": []
     },
     "group_whitelist": {
         "description": "群聊白名单",
         "hint": "允许使用此插件的群聊ID列表，为空则不限制",
         "type": "list",
-        "items": {"type": "string"},
+        "items": {
+            "type": "string"
+        },
         "default": []
     },
     "group_blacklist": {
         "description": "群聊黑名单",
         "hint": "禁止使用此插件的群聊ID列表",
         "type": "list",
-        "items": {"type": "string"},
+        "items": {
+            "type": "string"
+        },
         "default": []
+    },
+    "image_prompt_template": {
+        "description": "文生图提示词模板",
+        "hint": "可用占位符: {user_prompt}",
+        "type": "string",
+        "default": "{user_prompt}"
+    },
+    "edit_prompt_template": {
+        "description": "图生图提示词模板",
+        "hint": "可用占位符: {user_prompt}",
+        "type": "string",
+        "default": "{user_prompt}"
+    },
+    "enable_video_prompt_enhancement": {
+        "description": "启用视频提示词增强策略",
+        "hint": "关闭后将不自动附加增强提示",
+        "type": "bool",
+        "default": true
+    },
+    "video_prompt_template": {
+        "description": "视频最终提示词模板",
+        "hint": "可用占位符: {user_prompt} {enhancement_hint} {consistency_hint} {length_hint} {ratio_hint}",
+        "type": "string",
+        "default": "{user_prompt}\\n\\n{enhancement_hint}{consistency_hint}"
+    },
+    "video_enhancement_hint": {
+        "description": "视频增强文案",
+        "hint": "用于画面细节与稳定性约束",
+        "type": "string",
+        "default": "画面要求：高细节、清晰边缘、低噪点、运动稳定、时序一致。输出风格自然，不要过度锐化。"
+    },
+    "video_consistency_hint_with_image": {
+        "description": "视频一致性文案（图生视频）",
+        "hint": "有参考图时附加",
+        "type": "string",
+        "default": "保持参考图主体身份、构图和色调风格一致。"
+    },
+    "video_consistency_hint_without_image": {
+        "description": "视频一致性文案（文生视频）",
+        "hint": "无参考图时附加",
+        "type": "string",
+        "default": "主体动作连贯，镜头转场平滑。"
     }
 }
