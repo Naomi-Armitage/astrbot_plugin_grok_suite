@@ -2000,7 +2000,8 @@ class GrokPlugin(Star):
                                     break
                                 if media_bytes or media_url:
                                     return [(media_url, media_bytes)], None
-                                return [], "未能从响应中提取图片"
+                                last_error = "??????????"
+                                break
 
                             raw_content = await resp.read()
                             logger.info(f"[图生图] 响应前500字节: {raw_content[:500]}")
@@ -2008,12 +2009,14 @@ class GrokPlugin(Star):
                                 data = json.loads(raw_content.decode("utf-8"))
                             except (json.JSONDecodeError, UnicodeDecodeError):
                                 logger.error(f"JSON解析失败，响应前200字节: {raw_content[:200]}")
-                                return [], "API响应格式异常"
+                                last_error = "API??????"
+                                break
 
                             results = self._parse_image_api_response(data)
                             if results:
                                 return results, None
-                            return [], "未能从响应中提取图片"
+                            last_error = "??????????"
+                            break
 
                     except (asyncio.TimeoutError, aiohttp.ClientError):
                         if attempt < self.MAX_REQUEST_RETRIES - 1:
@@ -2186,10 +2189,12 @@ class GrokPlugin(Star):
                                 if attempt < self.MAX_REQUEST_RETRIES - 1:
                                     await asyncio.sleep(self._retry_delay_seconds(attempt))
                                     continue
-                                return [], error
+                                last_error = error
+                                break
                             if media_bytes or media_url:
                                 return [(media_url, media_bytes)], None
-                            return [], "未能从响应中提取图片"
+                            last_error = "??????????"
+                            break
 
                         raw_content = await resp.read()
                         logger.info(f"[图生图] 响应前500字节: {raw_content[:500]}")
@@ -2197,12 +2202,14 @@ class GrokPlugin(Star):
                             data = json.loads(raw_content.decode("utf-8"))
                         except (json.JSONDecodeError, UnicodeDecodeError):
                             logger.error(f"JSON解析失败，响应前200字节: {raw_content[:200]}")
-                            return [], "API响应格式异常"
+                            last_error = "API??????"
+                            break
 
                         results = self._parse_image_api_response(data)
                         if results:
                             return results, None
-                        return [], "未能从响应中提取图片"
+                        last_error = "??????????"
+                        break
 
                 except (asyncio.TimeoutError, aiohttp.ClientError):
                     if attempt < self.MAX_REQUEST_RETRIES - 1:
