@@ -61,6 +61,50 @@ class FakeSession:
         return self._responses.pop(0)
 
 
+def _build_plugin(plugin_module, tmp_path: Path):
+    return plugin_module.GrokPlugin(
+        context=MagicMock(),
+        config={
+            "grok_api_key": "test-key",
+            "grok_api_url": "https://api.x.ai",
+            "stream_enabled": True,
+        },
+    )
+
+
+def test_build_image_prompt_adds_generation_prefix_when_missing(tmp_path: Path):
+    plugin_module = load_grok_plugin_module()
+    plugin_module.StarTools.get_data_dir = lambda *args, **kwargs: str(tmp_path)
+    plugin = _build_plugin(plugin_module, tmp_path)
+
+    assert (
+        plugin._build_image_prompt("a cozy cabin in the snow")
+        == "Generate an AI image of: a cozy cabin in the snow"
+    )
+
+
+def test_build_image_prompt_does_not_duplicate_existing_prefix(tmp_path: Path):
+    plugin_module = load_grok_plugin_module()
+    plugin_module.StarTools.get_data_dir = lambda *args, **kwargs: str(tmp_path)
+    plugin = _build_plugin(plugin_module, tmp_path)
+
+    assert (
+        plugin._build_image_prompt("Generate an AI image of: a cozy cabin in the snow")
+        == "Generate an AI image of: a cozy cabin in the snow"
+    )
+
+
+def test_build_image_prompt_adds_edit_prefix_when_missing(tmp_path: Path):
+    plugin_module = load_grok_plugin_module()
+    plugin_module.StarTools.get_data_dir = lambda *args, **kwargs: str(tmp_path)
+    plugin = _build_plugin(plugin_module, tmp_path)
+
+    assert (
+        plugin._build_image_prompt("turn the background into a forest", is_edit=True)
+        == "Edit this image to: turn the background into a forest"
+    )
+
+
 @pytest.mark.asyncio
 async def test_edit_image_falls_back_to_non_stream_when_stream_media_parse_fails(
     monkeypatch,
@@ -73,14 +117,7 @@ async def test_edit_image_falls_back_to_non_stream_when_stream_media_parse_fails
         lambda *args, **kwargs: str(tmp_path),
     )
 
-    plugin = plugin_module.GrokPlugin(
-        context=MagicMock(),
-        config={
-            "grok_api_key": "test-key",
-            "grok_api_url": "https://api.x.ai",
-            "stream_enabled": True,
-        },
-    )
+    plugin = _build_plugin(plugin_module, tmp_path)
     plugin.IMAGE_RESPONSE_FORMAT_CANDIDATES = ("url",)
     plugin.MAX_REQUEST_RETRIES = 1
 

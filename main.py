@@ -112,6 +112,17 @@ class GrokPlugin(Star):
     GENERATED_IMAGE_URL_INDEX_LIMIT = 512
     RECENT_SESSION_IMAGE_TTL_SECONDS = 3600
     RECENT_SESSION_IMAGE_LIMIT = 12
+    IMAGE_PROMPT_PREFIXES = (
+        "generate an ai image of:",
+        "generate an image of:",
+        "create an ai image of:",
+        "create an image of:",
+    )
+    EDIT_IMAGE_PROMPT_PREFIXES = (
+        "edit this image to:",
+        "edit this image:",
+        "transform this image into:",
+    )
 
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -1726,10 +1737,35 @@ class GrokPlugin(Star):
             return self._to_bool(self.conf.get("nsfw_enabled", False), False)
         return self._to_bool(self.conf.get("nsfw", False), False)
 
+    @classmethod
+    def _ensure_image_prompt_prefix(cls, prompt: str, is_edit: bool = False) -> str:
+        prompt = (prompt or "").strip()
+        if not prompt:
+            return prompt
+
+        accepted_prefixes = (
+            cls.EDIT_IMAGE_PROMPT_PREFIXES
+            if is_edit
+            else cls.IMAGE_PROMPT_PREFIXES
+        )
+        lowered_prompt = prompt.lower()
+        if any(lowered_prompt.startswith(prefix) for prefix in accepted_prefixes):
+            return prompt
+
+        default_prefix = (
+            "Edit this image to:"
+            if is_edit
+            else "Generate an AI image of:"
+        )
+        return f"{default_prefix} {prompt}"
+
     def _build_image_prompt(self, user_prompt: str, is_edit: bool = False) -> str:
         key = "edit_prompt_template" if is_edit else "image_prompt_template"
         template = self.conf.get(key, "{user_prompt}")
-        return self._render_prompt_template(template, {"user_prompt": user_prompt}).strip()
+        rendered = self._render_prompt_template(
+            template, {"user_prompt": user_prompt}
+        ).strip()
+        return self._ensure_image_prompt_prefix(rendered, is_edit=is_edit)
 
     def _build_video_prompt(
         self,
