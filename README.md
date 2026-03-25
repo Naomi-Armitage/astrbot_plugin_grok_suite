@@ -1,14 +1,14 @@
 # Grok AI 助手
 
 
-## Recent Updates
+## 最近更新
 
-- Synced `main` with the full feature set from `codex/update-naomi-sync-20260323`.
-- Added automatic image prompt normalization for both text-to-image and image-to-image requests.
-- Added a non-stream fallback when streamed image responses do not contain media.
-- Preserved multiple image URLs returned in a single Grok response instead of keeping only the first one.
-- Added regression tests that cover fallback handling, prompt normalization, and multi-result extraction.
-- See `CHANGELOG.md` for a concise summary of the synced fixes.
+- 已将 `codex/update-naomi-sync-20260323` 分支的完整功能同步到 `main`。
+- 为文生图和图生图请求补充了自动提示词前缀规范化。
+- 当流式图片响应中没有媒体内容时，会自动回退到非流式解析。
+- 当 Grok 一次返回多张图片链接时，现在会全部保留，不再只取第一张。
+- 已补充回归测试，覆盖回退处理、提示词规范化和多结果提取。
+- 详细变更摘要见 `CHANGELOG.md`。
 
 ## 功能
 

@@ -1,18 +1,18 @@
-# Changelog
+# 更新日志
 
-## Unreleased - 2026-03-25
+## 未发布 - 2026-03-25
 
-### Added
+### 新增
 
-- Added regression coverage for image response fallback handling, prompt normalization, and multi-result extraction.
-- Added a short "Recent Updates" section in the README to summarize the current main-branch fixes.
+- 补充了图片响应回退、提示词规范化和多结果提取的回归测试覆盖。
+- 在 README 中新增了“最近更新”小节，用于概述当前主分支的重要修复。
 
-### Changed
+### 变更
 
-- Synced `main` with the full change set from `codex/update-naomi-sync-20260323`.
-- Normalized image prompts so text-to-image requests default to `Generate an AI image of:` and image-to-image requests default to `Edit this image to:` when a compatible prefix is missing.
+- 将 `codex/update-naomi-sync-20260323` 的完整改动同步到了 `main`。
+- 规范化了生图提示词：文生图缺少前缀时默认补 `Generate an AI image of:`，图生图缺少前缀时默认补 `Edit this image to:`。
 
-### Fixed
+### 修复
 
-- Fell back to non-stream image extraction when streamed Grok image responses do not contain media.
-- Preserved multiple image results when Grok returns more than one image URL in a single response payload.
+- 当流式 Grok 图片响应中未包含媒体内容时，自动回退到非流式图片提取。
+- 当 Grok 在一次响应中返回多张图片链接时，保留全部图片结果，不再只取第一张。
