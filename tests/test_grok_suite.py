@@ -153,3 +153,58 @@ async def test_edit_image_falls_back_to_non_stream_when_stream_media_parse_fails
     assert error is None
     assert results == [("https://example.com/generated.png", None)]
     assert [call["json"]["stream"] for call in fake_session.calls] == [True, False]
+
+
+@pytest.mark.asyncio
+async def test_edit_image_returns_multiple_results_from_chat_completion_text(
+    monkeypatch,
+    tmp_path: Path,
+):
+    plugin_module = load_grok_plugin_module()
+    monkeypatch.setattr(
+        plugin_module.StarTools,
+        "get_data_dir",
+        lambda *args, **kwargs: str(tmp_path),
+    )
+
+    plugin = _build_plugin(plugin_module, tmp_path)
+    plugin.IMAGE_RESPONSE_FORMAT_CANDIDATES = ("url",)
+    plugin.MAX_REQUEST_RETRIES = 1
+
+    async def fake_resolve_model(**kwargs):
+        return "grok-imagine-1.0-edit"
+
+    payload = {
+        "choices": [
+            {
+                "message": {
+                    "content": (
+                        "https://example.com/generated-1.png\n"
+                        "https://example.com/generated-2.png"
+                    )
+                }
+            }
+        ]
+    }
+    fake_session = FakeSession(
+        [FakeResponse(status=200, body=json.dumps(payload).encode("utf-8"))]
+    )
+
+    async def fake_ensure_session():
+        return fake_session
+
+    monkeypatch.setattr(plugin, "_resolve_model", fake_resolve_model)
+    monkeypatch.setattr(plugin, "_ensure_session", fake_ensure_session)
+
+    results, error = await plugin._edit_image_via_chat(
+        prompt="turn it into a watercolor painting",
+        image_bytes=b"\x89PNG\r\n\x1a\nfake",
+        stream_preference=False,
+    )
+
+    assert error is None
+    assert results == [
+        ("https://example.com/generated-1.png", None),
+        ("https://example.com/generated-2.png", None),
+    ]
+    assert [call["json"]["stream"] for call in fake_session.calls] == [False]

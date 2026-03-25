@@ -345,6 +345,10 @@ class GrokPlugin(Star):
                     content = msg.get("content")
                     if isinstance(content, str) and content.strip():
                         content = content.strip()
+                        extracted_urls = self._extract_urls_from_text(content)
+                        if extracted_urls:
+                            results.extend((url, None) for url in extracted_urls)
+                            continue
                         extracted_url = self._extract_url_from_text(content)
                         if extracted_url:
                             results.append((extracted_url, None))
@@ -360,7 +364,7 @@ class GrokPlugin(Star):
 
         # 其他格式: 尝试提取 URL 或 Base64
         if not results:
-            url, b64, _ = self._parse_json_response(data)
+            url, b64, text = self._parse_json_response(data)
             if url:
                 results.append((url, None))
             elif b64:
@@ -369,6 +373,12 @@ class GrokPlugin(Star):
                     results.append((None, img_bytes))
                 except Exception as e:
                     logger.warning(f"Base64 解码失败: {e}")
+
+            elif text:
+                results.extend(
+                    (extracted_url, None)
+                    for extracted_url in self._extract_urls_from_text(text)
+                )
 
         return results
 
